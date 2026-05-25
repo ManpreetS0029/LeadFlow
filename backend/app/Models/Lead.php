@@ -11,6 +11,7 @@ class Lead extends Model
     use HasFactory;
 
     protected $fillable = [
+        'assigned_user_id',
         'user_id',
         'name',
         'email',
@@ -32,5 +33,10 @@ class Lead extends Model
     public function activities()
     {
         return $this->hasMany(LeadActivity::class)->latest();
+    }
+
+    public function assignedUser()
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 }

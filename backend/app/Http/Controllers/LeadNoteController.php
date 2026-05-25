@@ -71,6 +71,7 @@ class LeadNoteController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Note deleted successfully.',
         ]);
     }

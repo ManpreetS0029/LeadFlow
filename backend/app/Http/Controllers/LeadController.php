@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Lead;
 use App\Models\LeadNote;
 use App\Models\LeadActivity;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class LeadController extends Controller
@@ -187,7 +188,6 @@ class LeadController extends Controller
             'source' => ['nullable', 'string', 'max:100'],
             'status' => ['sometimes', 'required', 'in:new,contacted,qualified,lost,converted'],
             'priority' => ['sometimes', 'required', 'in:low,medium,high'],
-            'notes' => ['nullable', 'string'],
             'follow_up_date' => ['nullable', 'date'],
             'estimated_value' => ['nullable', 'numeric', 'min:0'],
         ]);
@@ -196,7 +196,7 @@ class LeadController extends Controller
 
         $editNote = LeadNote::where('lead_id', $lead->id)
             ->update([
-                'note' => $request->note
+                'note' => $request->notes
             ]);
 
         LeadActivity::create([
@@ -266,4 +266,30 @@ class LeadController extends Controller
             'new_status' => $lead->status,
         ], 200);
     }
+
+    public function assignLead(Request $request, Lead $lead)
+{
+    $validated = $request->validate([
+        'assigned_user_id' => ['required', 'integer', 'exists:users,id'],
+    ]);
+
+    $salesUser = User::where('id', $validated['assigned_user_id'])
+        ->where('roles', 2)
+        ->first();
+
+    if (!$salesUser) {
+        return response()->json([
+            'message' => 'Selected user must be a Sales Executive.'
+        ], 422);
+    }
+
+    $lead->update([
+        'assigned_user_id' => $validated['assigned_user_id'],
+    ]);
+
+    return response()->json([
+        'message' => 'Lead assigned successfully.',
+        'data' => $lead->load('assignedUser'),
+    ]);
+}
 }
