@@ -6,6 +6,7 @@ interface ComponentCardProps {
   className?: string; // Additional custom classes for styling
   desc?: string; // Description text
   button?: string;
+  buttonLink?: string;
 }
 
 const ComponentCard: React.FC<ComponentCardProps> = ({
@@ -14,6 +15,7 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
   className = "",
   desc = "",
   button = "",
+  buttonLink = ""
 }) => {
   return (
     <div
@@ -30,7 +32,7 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
           </p>
         )}
         {button && (
-           <Link to="/add-lead" className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none">
+           <Link to={buttonLink} className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none">
     {button}
   </Link>
         )}

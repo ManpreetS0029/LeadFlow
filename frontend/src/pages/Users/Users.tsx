@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
 
-interface Lead {
+interface User {
   id: any;
   name: string;
   email: string;
@@ -36,8 +36,8 @@ interface PaginationData {
   total: number;
 }
 
-export default function Leads() {
-  const [leads, setLeads] = useState<Lead[]>([]);
+export default function Users() {
+  const [users, setUsers] = useState<User[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [page, setPage] = useState(1);
   const [activeDropdownId, setActiveDropdownId] = useState<any>(null);
@@ -45,9 +45,6 @@ export default function Leads() {
   const [tableLoading, setTableLoading] = useState(false);
   const navigate = useNavigate();
 
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
-  const [source, setSource] = useState('');
 
   const toggleDropdown = (id: any) => {
     setActiveDropdownId(activeDropdownId === id ? null : id);
@@ -61,12 +58,9 @@ export default function Leads() {
       setLoading(false);
       setTableLoading(true);
 
-      const response = await axios.get(`${apiUrl}/leads`, {
+      const response = await axios.get(`${apiUrl}/users`, {
         params: {
           page: pageNumber,
-          search,
-          status,
-          source,
         },
         headers: {
           Accept: 'application/json',
@@ -76,7 +70,7 @@ export default function Leads() {
 
       const result = response.data;
 
-      setLeads(result.data);
+      setUsers(result.data);
 
       setTableLoading(false);
 
@@ -94,13 +88,13 @@ export default function Leads() {
 
   useEffect(() => {
     fetchLeads(page);
-  }, [page, search, status, source]);
+  }, [page]);
 
   const handleDelete = async (id: any) => {
     // 2. Trigger the SweetAlert confirmation dialog
     Swal.fire({
       title: 'Are you sure?',
-      text: "You won't be able to revert this lead record!",
+      text: "You won't be able to revert this user record!",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -115,7 +109,7 @@ export default function Leads() {
         setLoading(true);
 
         try {
-          const response = await axios.delete(`${apiUrl}/leads/${id}`, {
+          const response = await axios.delete(`${apiUrl}/users/${id}`, {
             headers: {
               Accept: 'application/json',
               Authorization: `Bearer ${token}`,
@@ -125,11 +119,11 @@ export default function Leads() {
           const data = response.data;
 
           if (data.success || response.status === 200) {
-            setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== id));
-            toast.success('Lead deleted successfully');
+            setUsers((prevUsers) => prevUsers.filter((user) => user.id !== id));
+            toast.success('User deleted successfully');
           }
         } catch (error) {
-          console.error('Failed to delete lead: ', error);
+          console.error('Failed to delete user: ', error);
           toast.error('Something went wrong while deleting');
         } finally {
           setLoading(false);
@@ -148,42 +142,11 @@ export default function Leads() {
 
   return (
     <>
-      <PageMeta title="Lead | LeadFlow" description="Leads Management System" />
-      <PageBreadcrumb pageTitle="Leads" />
+      <PageMeta title="Users | LeadFlow" description="Leads Management System" />
+      <PageBreadcrumb pageTitle="Users" />
       <div className="space-y-6">
-        <ComponentCard title="Leads" button="Add Lead" buttonLink='/add-lead'>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, email, phone, company"
-              className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-blue-500"
-            />
-
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-blue-500"
-            >
-              <option value="" className="dark:bg-gray-900 dark:text-white">All Status</option>
-              <option value="new" className="dark:bg-gray-900 dark:text-white">New</option>
-              <option value="contacted" className="dark:bg-gray-900 dark:text-white">Contacted</option>
-              <option value="qualified" className="dark:bg-gray-900 dark:text-white">Qualified</option>
-              <option value="proposal_sent" className="dark:bg-gray-900 dark:text-white">Proposal Sent</option>
-              <option value="converted" className="dark:bg-gray-900 dark:text-white">Converted</option>
-              <option value="lost" className="dark:bg-gray-900 dark:text-white">Lost</option>
-            </select>
-
-            <input
-              type="text"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="Filter by source"
-              className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-blue-500"
-            />
-          </div>
-
+        <ComponentCard title="Users" button="Add User" buttonLink="/add-user">
+          
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
             <div className="max-w-full overflow-x-auto">
               <Table>
@@ -212,31 +175,7 @@ export default function Leads() {
                       isHeader
                       className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                     >
-                      Company
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
-                      Source
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
-                      Status
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
-                      Priority
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                    >
-                      Follow Up Date
+                      Roles
                     </TableCell>
                     <TableCell
                       isHeader
@@ -257,69 +196,38 @@ export default function Leads() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ) : leads.length === 0 ? (
+                  ) : users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="py-10 text-center text-gray-500">
-                        No leads found.
+                        No users found.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    leads.map((lead) => (
-                      <TableRow key={lead.id}>
+                    users.map((user) => (
+                      <TableRow key={user.id}>
                         <TableCell className="px-5 py-4 sm:px-6 text-start">
                           <div className="flex items-center gap-3">
                             <div>
                               <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                {lead.name}
+                                {user.name}
                               </span>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                          {lead.email}
+                          {user.email}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                          {lead.phone}
+                          {user.phone}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                          {lead.company}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                          {lead.source}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                          <Badge
+                        
+                        <Badge
                             size="sm"
-                            color={
-                              lead.status === 'new'
-                                ? 'success'
-                                : lead.status === 'contacted' ||
-                                    lead.status === 'qualified'
-                                  ? 'warning'
-                                  : 'error'
-                            }
+                            color={'success'}
                           >
-                            {lead.status.charAt(0).toUpperCase() +
-                              lead.status.slice(1)}
+                            {user.roles === 1 ? 'Admin' : (user.roles === 2 ? 'Sales Executive' : 'Manager')}  
                           </Badge>
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                          <Badge
-                            size="sm"
-                            color={
-                              lead.priority === 'low'
-                                ? 'success'
-                                : lead.priority === 'medium'
-                                  ? 'warning'
-                                  : 'error'
-                            }
-                          >
-                            {lead.priority.charAt(0).toUpperCase() +
-                              lead.priority.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                          {lead.follow_up_date}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                           <div className="relative inline-block">
@@ -327,7 +235,7 @@ export default function Leads() {
                               <div>
                                 {/* Pass the specific record ID to the toggle function */}
                                 <button
-                                  onClick={() => toggleDropdown(lead.id)}
+                                  onClick={() => toggleDropdown(user.id)}
                                   className="text-gray-500 dark:text-gray-400 focus:outline-none"
                                 >
                                   <svg
@@ -349,7 +257,7 @@ export default function Leads() {
                               </div>
 
                               {/* Only display if this specific row's ID matches the active ID */}
-                              {activeDropdownId === lead.id && (
+                              {activeDropdownId === user.id && (
                                 <div
                                   className="z-10"
                                   style={{
@@ -369,17 +277,8 @@ export default function Leads() {
                                     >
                                       <button
                                         onClick={() => {
-                                          navigate(`/view-lead/${lead.id}`);
-                                          setActiveDropdownId(null);
-                                        }}
-                                        className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                                      >
-                                        View
-                                      </button>
-                                      <button
-                                        onClick={() => {
                                           // 1. Navigate to the edit URL with the current lead's ID
-                                          navigate(`/edit-lead/${lead.id}`);
+                                          navigate(`/edit-user/${user.id}`);
 
                                           // 2. Close the dropdown menu
                                           setActiveDropdownId(null);
@@ -390,7 +289,7 @@ export default function Leads() {
                                       </button>
                                       <button
                                         onClick={() => {
-                                          handleDelete(lead.id);
+                                          handleDelete(user.id);
                                         }}
                                         className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                                       >
@@ -403,6 +302,7 @@ export default function Leads() {
                             </div>
                           </div>
                         </TableCell>
+                       
                       </TableRow>
                     ))
                   )}

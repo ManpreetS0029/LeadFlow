@@ -9,6 +9,8 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { HiChartSquareBar } from "react-icons/hi";
+import { FiUsers } from "react-icons/fi";
+
 
 type NavItem = {
   name: string;
@@ -27,6 +29,11 @@ const navItems: NavItem[] = [
     icon: <HiChartSquareBar />,
     name: "Leads",
     path: "/leads",
+  },
+  {
+    icon: <FiUsers />,
+    name: "Users",
+    path: "/users",
   },
 ];
 

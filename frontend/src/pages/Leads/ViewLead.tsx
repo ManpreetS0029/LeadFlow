@@ -21,11 +21,19 @@ export default function ViewLead() {
     openModal: openStatusModal,
     closeModal: closeStatusModal,
   } = useModal();
+  
   const {
     isOpen: isNoteModalOpen,
     openModal: openNoteModal,
     closeModal: closeNoteModal,
   } = useModal();
+
+  const {
+    isOpen: isAssignLeadModalOpen,
+    openModal: openAssignLeadModal,
+    closeModal: closeAssignLeadModal,
+  } = useModal();
+
   const [status, setStatus] = useState('');
   const [form, setForm] = useState({
     note: '',
@@ -39,6 +47,10 @@ export default function ViewLead() {
     'converted',
     'lost',
   ];
+
+  const [users, setUsers] = useState([]);
+
+  const [assignedUserId, setAssignedUserId] = useState('');
 
   const apiUrl = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem('token');
@@ -66,13 +78,41 @@ export default function ViewLead() {
     }
   };
 
+  const getUsers = async () => {
+    try
+    {
+      const response = await axios.get(`${apiUrl}/sales-users`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const result = response.data;
+
+      setUsers(result.data ?? result);
+    }
+    catch (error)
+    {
+      console.error("Failed to get users: ", error);
+    }
+  };
+
   useEffect(() => {
     getLead();
+  }, []);
+
+   useEffect(() => {
+    getUsers();
   }, []);
 
   useEffect(() => {
     if (lead?.status) {
       setStatus(lead.status);
+    }
+    if(lead?.assigned_user_id)
+    {
+      setAssignedUserId(lead.assigned_user_id);
     }
   }, [lead]);
 
@@ -205,6 +245,12 @@ export default function ViewLead() {
         },
       });
 
+      const newNote = response.data.note;
+      setLead((prev: any) => ({
+        ...prev,
+        notes: [newNote, ...(prev.notes || [])],
+      }));
+
       setForm({
         note: '',
       });
@@ -214,6 +260,68 @@ export default function ViewLead() {
     } catch (error) {
       console.error('Failed to update note: ', error);
       toast.error('Failed to update note');
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+      customClass: {
+        container: 'z-[99999]',
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.delete(`${apiUrl}/lead-notes/${noteId}`, {
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          setLead((prev: any) => ({
+            ...prev,
+            notes: prev.notes?.filter((note: any) => note.id !== noteId),
+          }));
+
+          toast.success('Note deleted successfully');
+        } catch (error) {
+          console.error('Failed to delete note: ', error);
+          toast.error('Something went wrong while deleting');
+        }
+      }
+    });
+  };
+
+  const handleAssignLead = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.patch(
+        `${apiUrl}/leads/${id}/assign`,
+        { assigned_user_id: assignedUserId },
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      setAssignedUserId(response.data.lead?.assigned_user_id ?? assignedUserId);
+
+      toast.success('Lead assigned successfully');
+      closeAssignLeadModal();
+    } catch (error) {
+      console.error('Failed to update status: ', error);
+      toast.error('Failed to update status');
     }
   };
 
@@ -310,11 +418,34 @@ export default function ViewLead() {
                 {lead.notes?.map((note) => (
                   <div
                     key={note.id}
-                    className="rounded-xl border border-gray-200 p-4 dark:border-gray-800"
+                    className="relative rounded-xl border border-gray-200 p-4 dark:border-gray-800"
                   >
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {note.note}
-                    </p>
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {note.note}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete Note"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                     <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
                       Added by {note.user?.name} •{' '}
                       {new Date(note.created_at).toLocaleString('en-IN', {
@@ -374,7 +505,7 @@ export default function ViewLead() {
                   Change Status
                 </button>
 
-                <button className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-white/[0.06]">
+                <button className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-white/[0.06]" onClick={openAssignLeadModal}>
                   Assign User
                 </button>
 
@@ -497,6 +628,53 @@ export default function ViewLead() {
                     className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
                   >
                     Update Status
+                  </button>
+                </div>
+              </form>
+            </Modal>
+
+             <Modal
+              isOpen={isAssignLeadModalOpen}
+              onClose={closeAssignLeadModal}
+              className="max-w-[500px] p-6"
+            >
+              <form onSubmit={handleAssignLead}>
+                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+                  Assign Lead
+                </h4>
+
+                <div className="mb-5">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Users
+                  </label>
+
+                  <select
+                    value={assignedUserId}
+                    onChange={(e) => setAssignedUserId(e.target.value)}
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                  >
+                    {users.map((item) => (
+                      <option key={item.id} value={item.id} className="dark:bg-gray-900 dark:text-white">
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeAssignLeadModal}
+                    className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
+                  >
+                    Submit
                   </button>
                 </div>
               </form>
