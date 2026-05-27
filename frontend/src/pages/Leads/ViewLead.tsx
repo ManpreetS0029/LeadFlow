@@ -9,8 +9,12 @@ import { Modal } from '../../components/ui/modal';
 import { useModal } from '../../hooks/useModal';
 import Swal from 'sweetalert2';
 import TextArea from '../../components/form/input/TextArea';
+import { useAuth } from '../../context/AuthContext';
+import Can from '../../components/Can';
 
 export default function ViewLead() {
+  const { hasPermission } = useAuth();
+
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -21,7 +25,7 @@ export default function ViewLead() {
     openModal: openStatusModal,
     closeModal: closeStatusModal,
   } = useModal();
-  
+
   const {
     isOpen: isNoteModalOpen,
     openModal: openNoteModal,
@@ -79,22 +83,19 @@ export default function ViewLead() {
   };
 
   const getUsers = async () => {
-    try
-    {
+    try {
       const response = await axios.get(`${apiUrl}/sales-users`, {
         headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`
-        }
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const result = response.data;
 
       setUsers(result.data ?? result);
-    }
-    catch (error)
-    {
-      console.error("Failed to get users: ", error);
+    } catch (error) {
+      console.error('Failed to get users: ', error);
     }
   };
 
@@ -102,7 +103,7 @@ export default function ViewLead() {
     getLead();
   }, []);
 
-   useEffect(() => {
+  useEffect(() => {
     getUsers();
   }, []);
 
@@ -110,8 +111,7 @@ export default function ViewLead() {
     if (lead?.status) {
       setStatus(lead.status);
     }
-    if(lead?.assigned_user_id)
-    {
+    if (lead?.assigned_user_id) {
       setAssignedUserId(lead.assigned_user_id);
     }
   }, [lead]);
@@ -406,12 +406,14 @@ export default function ViewLead() {
                   Notes
                 </h4>
 
-                <button
-                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
-                  onClick={openNoteModal}
-                >
-                  Add Note
-                </button>
+                <Can permission="leads.notes.create">
+                  <button
+                    className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
+                    onClick={openNoteModal}
+                  >
+                    Add Note
+                  </button>
+                </Can>
               </div>
 
               <div className="space-y-4">
@@ -426,25 +428,27 @@ export default function ViewLead() {
                           {note.note}
                         </p>
                       </div>
-                      <button
-                        onClick={() => handleDeleteNote(note.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors"
-                        title="Delete Note"
-                      >
-                        <svg
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="2"
+                      <Can permission="leads.notes.delete">
+                        <button
+                          onClick={() => handleDeleteNote(note.id)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          title="Delete Note"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
+                          <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </Can>
                     </div>
                     <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
                       Added by {note.user?.name} •{' '}
@@ -498,25 +502,34 @@ export default function ViewLead() {
                   Edit Lead
                 </button>
 
+                <Can permission="leads.status.change">
                 <button
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-white/[0.06]"
                   onClick={openStatusModal}
                 >
                   Change Status
                 </button>
+                </Can>
 
-                <button className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-white/[0.06]" onClick={openAssignLeadModal}>
-                  Assign User
-                </button>
+                <Can permission="leads.assign">
+                  <button
+                    className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-white/[0.06]"
+                    onClick={openAssignLeadModal}
+                  >
+                    Assign User
+                  </button>
+                </Can>
 
-                <button
-                  className="w-full rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 dark:bg-red-500/15 dark:text-red-400"
-                  onClick={() => {
-                    handleDelete(lead.id);
-                  }}
-                >
-                  Delete Lead
-                </button>
+                <Can permission="leads.delete">
+                  <button
+                    className="w-full rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 dark:bg-red-500/15 dark:text-red-400"
+                    onClick={() => {
+                      handleDelete(lead.id);
+                    }}
+                  >
+                    Delete Lead
+                  </button>
+                </Can>
               </div>
             </div>
 
@@ -525,17 +538,17 @@ export default function ViewLead() {
               <h4 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">
                 Activity Timeline
               </h4>
-               
+
               <div className="space-y-4">
-                 {lead.activities?.map((activity) => (
-                <div key={activity.id} className="flex gap-3">
-                  <div className="mt-1.5 h-2 w-2 rounded-full bg-brand-500" />
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {activity.description} 
-                    <br /> 
-                    User: {activity.user?.name}
-                  </p>
-                </div>
+                {lead.activities?.map((activity) => (
+                  <div key={activity.id} className="flex gap-3">
+                    <div className="mt-1.5 h-2 w-2 rounded-full bg-brand-500" />
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {activity.description}
+                      <br />
+                      User: {activity.user?.name}
+                    </p>
+                  </div>
                 ))}
               </div>
             </div>
@@ -607,7 +620,11 @@ export default function ViewLead() {
                     className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                   >
                     {statuses.map((item) => (
-                      <option key={item} value={item} className="dark:bg-gray-900 dark:text-white">
+                      <option
+                        key={item}
+                        value={item}
+                        className="dark:bg-gray-900 dark:text-white"
+                      >
                         {formatStatus(item)}
                       </option>
                     ))}
@@ -633,7 +650,7 @@ export default function ViewLead() {
               </form>
             </Modal>
 
-             <Modal
+            <Modal
               isOpen={isAssignLeadModalOpen}
               onClose={closeAssignLeadModal}
               className="max-w-[500px] p-6"
@@ -654,7 +671,11 @@ export default function ViewLead() {
                     className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                   >
                     {users.map((item) => (
-                      <option key={item.id} value={item.id} className="dark:bg-gray-900 dark:text-white">
+                      <option
+                        key={item.id}
+                        value={item.id}
+                        className="dark:bg-gray-900 dark:text-white"
+                      >
                         {item.name}
                       </option>
                     ))}

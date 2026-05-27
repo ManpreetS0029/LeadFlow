@@ -10,12 +10,13 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import { HiChartSquareBar } from "react-icons/hi";
 import { FiUsers } from "react-icons/fi";
-
+import { useAuth } from "../context/AuthContext";
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
+  permission?: string; 
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
@@ -24,22 +25,34 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/dashboard",
+    permission: "dashboard.view"
   },
    {
     icon: <HiChartSquareBar />,
     name: "Leads",
     path: "/leads",
+    permission: "leads.view_all"
   },
   {
     icon: <FiUsers />,
     name: "Users",
     path: "/users",
+    permission: "users.view"
   },
 ];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
+  const { hasPermission } = useAuth() as any;
+
+  const allowedNavItems = navItems.filter((item) => {
+    if(!item.permission)
+    {
+      return true;
+    }
+    return hasPermission(item.permission);
+  });
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
@@ -275,7 +288,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots className="size-6" />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(allowedNavItems, "main")}
             </div>
       
           </div>

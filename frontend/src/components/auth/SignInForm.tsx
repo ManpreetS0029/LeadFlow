@@ -46,9 +46,11 @@ export default function SignInForm() {
         localStorage.setItem("user_id", response.data.user.id);
         localStorage.setItem("name", response.data.name);
         localStorage.setItem("email", response.data.email);
-        localStorage.setItem("roles", response.data.roles);
+        localStorage.setItem("role_id", response.data.role_id);
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("avatar_url", response.data.avatar_url || "");
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("permissions", JSON.stringify(response.data.permissions));
         navigate("/dashboard");
       }
 
@@ -125,7 +127,7 @@ export default function SignInForm() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isChecked} onChange={setIsChecked} />
                     <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
@@ -138,7 +140,7 @@ export default function SignInForm() {
                   >
                     Forgot password?
                   </Link>
-                </div>
+                </div> */}
                 <div>
                   <Button className="w-full" size="sm">
                     {loading ? (<><ClipLoader size={18} color="#fff" /></>) : ("Sign In")}

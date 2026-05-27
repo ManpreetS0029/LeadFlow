@@ -23,7 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'roles',
+        'role_id',
         'phone',
         'avatar'
     ];
@@ -49,5 +49,21 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function hasPermission($permission)
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        return $this->role
+            ->permissions
+            ->contains('key', $permission);
     }
 }

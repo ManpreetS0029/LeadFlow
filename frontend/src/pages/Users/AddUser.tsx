@@ -138,14 +138,14 @@ export default function AddUser() {
           )}
             </div>
             <div className="mt-4">
-              <Label htmlFor="status">Roles</Label>
+              <Label htmlFor="role_id">Roles</Label>
               <Select
                 options={rolesOptions}
                 placeholder="Select Option"
-                onChange={(option) => handleSelectChange('roles', option)}
+                onChange={(option) => handleSelectChange('role_id', option)}
               />
-              {errors.roles && (
-                <p className="text-red-500">{errors.roles[0]}</p>
+              {errors.role_id && (
+                <p className="text-red-500">{errors.role_id[0]}</p>
               )}
             </div>
         

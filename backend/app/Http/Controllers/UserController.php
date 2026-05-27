@@ -7,12 +7,40 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 class UserController extends Controller
 {
+      public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:users.view',
+                only: ['index', 'show']
+            ),
+
+            new Middleware(
+                'permission:users.create',
+                only: ['store']
+            ),
+
+            new Middleware(
+                'permission:users.edit',
+                only: ['update']
+            ),
+
+            new Middleware(
+                'permission:users.delete',
+                only: ['destroy']
+            ),
+
+        ];
+    }
+
     public function index()
     {
-        $users = User::select('id', 'name', 'email', 'roles', 'created_at')
+        $users = User::select('id', 'name', 'email', 'role_id', 'created_at')
             ->latest()
             ->paginate(10);
 
@@ -25,7 +53,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'roles' => ['required', 'integer', 'in:1,2,3'],
+            'role_id' => ['required', 'integer', 'in:1,2,3'],
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -60,7 +88,7 @@ class UserController extends Controller
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
             'password' => ['nullable', 'string', 'min:8'],
-            'roles' => ['required', 'integer', 'in:1,2,3'],
+            'role_id' => ['required', 'integer', 'in:1,2,3'],
         ]);
 
         if (!empty($validated['password'])) {
@@ -89,14 +117,14 @@ class UserController extends Controller
     }
 
     public function salesUsers()
-{
-    $users = User::select('id', 'name', 'email')
-        ->where('roles', 2)
-        ->orderBy('name')
-        ->get();
+    {
+        $users = User::select('id', 'name', 'email')
+            ->where('role_id', 2)
+            ->orderBy('name')
+            ->get();
 
-    return response()->json([
-        'data' => $users
-    ]);
-}
+        return response()->json([
+            'data' => $users
+        ]);
+    }
 }

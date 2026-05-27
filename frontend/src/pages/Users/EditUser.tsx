@@ -27,7 +27,7 @@ export default function EditUser() {
     email: '',
     phone: '',
     password: '',
-    roles: '',
+    role_id: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -53,7 +53,7 @@ export default function EditUser() {
         name: result.name,
         email: result.email,
         phone: result.phone,
-        roles: result.roles,
+        role_id: result.role_id,
         password: '',
       });
 
@@ -187,11 +187,11 @@ export default function EditUser() {
                 key={`roles-${form.roles}`}
                 options={rolesOptions}
                 placeholder="Select Option"
-                defaultValue={form.roles ? String(form.roles) : ""}
-                onChange={(option) => handleSelectChange('roles', option)}
+                defaultValue={form.role_id ? String(form.role_id) : ""}
+                onChange={(option) => handleSelectChange('role_id', option)}
               />
-              {errors.roles && (
-                <p className="text-red-500">{errors.roles[0]}</p>
+              {errors.role_id && (
+                <p className="text-red-500">{errors.role_id[0]}</p>
               )}
             </div>
             <Button size="sm" variant="primary" className="mt-4">

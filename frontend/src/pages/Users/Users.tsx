@@ -311,24 +311,28 @@ export default function Users() {
             </div>
           </div>
           {pagination && (
-            <div className="flex items-center gap-3 mt-4">
-              <button
-                disabled={pagination.current_page === 1}
-                onClick={() => setPage((prev) => prev - 1)}
-                className="px-4 py-2 border disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span>
-                Page {pagination.current_page} of {pagination.last_page}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Showing page <span className="font-semibold text-gray-800 dark:text-gray-200">{pagination.current_page}</span> of <span className="font-semibold text-gray-800 dark:text-gray-200">{pagination.last_page}</span>
               </span>
-              <button
-                disabled={pagination.current_page === pagination.last_page}
-                onClick={() => setPage((prev) => prev + 1)}
-                className="px-4 py-2 border disabled:opacity-50"
-              >
-                Next
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  id="users-pagination-prev"
+                  disabled={pagination.current_page === 1}
+                  onClick={() => setPage((prev) => prev - 1)}
+                  className="px-4 py-2 text-sm font-medium border rounded-lg transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+                >
+                  Previous
+                </button>
+                <button
+                  id="users-pagination-next"
+                  disabled={pagination.current_page === pagination.last_page}
+                  onClick={() => setPage((prev) => prev + 1)}
+                  className="px-4 py-2 text-sm font-medium border rounded-lg transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </ComponentCard>

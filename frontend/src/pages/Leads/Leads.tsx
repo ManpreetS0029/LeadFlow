@@ -16,6 +16,10 @@ import { ClipLoader } from 'react-spinners';
 import { useNavigate } from 'react-router';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../context/AuthContext';
+import Can from '../../components/Can';
+import { Modal } from '../../components/ui/modal';
+import { useModal } from '../../hooks/useModal';
 
 interface Lead {
   id: any;
@@ -36,7 +40,18 @@ interface PaginationData {
   total: number;
 }
 
+const statuses = [
+    'new',
+    'contacted',
+    'qualified',
+    'proposal_sent',
+    'converted',
+    'lost',
+  ];
+
 export default function Leads() {
+  const { hasPermission } = useAuth();
+
   const [leads, setLeads] = useState<Lead[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [page, setPage] = useState(1);
@@ -55,6 +70,21 @@ export default function Leads() {
 
   const apiUrl = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem('token');
+
+  const { isOpen, openModal, closeModal } = useModal();
+  const [selectedLead, setSelectedLead] = useState({
+  id: null,
+  status: '',
+});
+
+const handleOpenStatusModal = (lead) => {
+  setSelectedLead({
+    id: lead.id,
+    status: lead.status,
+  });
+
+  openModal();
+};
 
   const fetchLeads = async (pageNumber = 1) => {
     try {
@@ -138,6 +168,41 @@ export default function Leads() {
     });
   };
 
+  const formatStatus = (value) => {
+    if (!value) {
+      return '-';
+    }
+
+    return value
+      .replace('_', ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const handleStatusUpdate = async (e) => {
+    e.preventDefault();
+
+    try {
+      await axios.patch(
+        `${apiUrl}/leads/${selectedLead.id}/status`,
+        { status: selectedLead.status },
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      toast.success('Status updated successfully');
+      fetchLeads(page);
+      setActiveDropdownId(null);
+      closeModal();
+    } catch (error) {
+      console.error('Failed to update status: ', error);
+      toast.error('Failed to update status');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -151,37 +216,79 @@ export default function Leads() {
       <PageMeta title="Lead | LeadFlow" description="Leads Management System" />
       <PageBreadcrumb pageTitle="Leads" />
       <div className="space-y-6">
-        <ComponentCard title="Leads" button="Add Lead" buttonLink='/add-lead'>
+        <ComponentCard
+          title="Leads"
+          {...(hasPermission('leads.create') && {
+            button: 'Add Lead',
+            buttonLink: '/add-lead',
+          })}
+        >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, email, phone, company"
-              className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-blue-500"
-            />
+            <Can permission="leads.search">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, email, phone, company"
+                className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-blue-500"
+              />
+            </Can>
 
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-blue-500"
-            >
-              <option value="" className="dark:bg-gray-900 dark:text-white">All Status</option>
-              <option value="new" className="dark:bg-gray-900 dark:text-white">New</option>
-              <option value="contacted" className="dark:bg-gray-900 dark:text-white">Contacted</option>
-              <option value="qualified" className="dark:bg-gray-900 dark:text-white">Qualified</option>
-              <option value="proposal_sent" className="dark:bg-gray-900 dark:text-white">Proposal Sent</option>
-              <option value="converted" className="dark:bg-gray-900 dark:text-white">Converted</option>
-              <option value="lost" className="dark:bg-gray-900 dark:text-white">Lost</option>
-            </select>
+            <Can permission="leads.filters">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-blue-500"
+              >
+                <option value="" className="dark:bg-gray-900 dark:text-white">
+                  All Status
+                </option>
+                <option
+                  value="new"
+                  className="dark:bg-gray-900 dark:text-white"
+                >
+                  New
+                </option>
+                <option
+                  value="contacted"
+                  className="dark:bg-gray-900 dark:text-white"
+                >
+                  Contacted
+                </option>
+                <option
+                  value="qualified"
+                  className="dark:bg-gray-900 dark:text-white"
+                >
+                  Qualified
+                </option>
+                <option
+                  value="proposal_sent"
+                  className="dark:bg-gray-900 dark:text-white"
+                >
+                  Proposal Sent
+                </option>
+                <option
+                  value="converted"
+                  className="dark:bg-gray-900 dark:text-white"
+                >
+                  Converted
+                </option>
+                <option
+                  value="lost"
+                  className="dark:bg-gray-900 dark:text-white"
+                >
+                  Lost
+                </option>
+              </select>
 
-            <input
-              type="text"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="Filter by source"
-              className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-blue-500"
-            />
+              <input
+                type="text"
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder="Filter by source"
+                className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-blue-500"
+              />
+            </Can>
           </div>
 
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -259,7 +366,10 @@ export default function Leads() {
                     </TableRow>
                   ) : leads.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="py-10 text-center text-gray-500">
+                      <TableCell
+                        colSpan={9}
+                        className="py-10 text-center text-gray-500"
+                      >
                         No leads found.
                       </TableCell>
                     </TableRow>
@@ -367,35 +477,49 @@ export default function Leads() {
                                       aria-orientation="vertical"
                                       aria-labelledby="options-menu"
                                     >
-                                      <button
-                                        onClick={() => {
-                                          navigate(`/view-lead/${lead.id}`);
-                                          setActiveDropdownId(null);
-                                        }}
-                                        className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                                      >
-                                        View
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          // 1. Navigate to the edit URL with the current lead's ID
-                                          navigate(`/edit-lead/${lead.id}`);
+                                      <Can permission="leads.view">
+                                        <button
+                                          onClick={() => {
+                                            navigate(`/view-lead/${lead.id}`);
+                                            setActiveDropdownId(null);
+                                          }}
+                                          className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                                        >
+                                          View
+                                        </button>
+                                      </Can>
+                                      <Can permission="leads.update">
+                                        <button
+                                          onClick={() => {
+                                            // 1. Navigate to the edit URL with the current lead's ID
+                                            navigate(`/edit-lead/${lead.id}`);
 
-                                          // 2. Close the dropdown menu
-                                          setActiveDropdownId(null);
-                                        }}
-                                        className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleDelete(lead.id);
-                                        }}
-                                        className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                                      >
-                                        Delete
-                                      </button>
+                                            // 2. Close the dropdown menu
+                                            setActiveDropdownId(null);
+                                          }}
+                                          className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                                        >
+                                          Edit
+                                        </button>
+                                        <Can permission="leads.change.status">
+                                          <button
+                                            className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                                            onClick={() => handleOpenStatusModal(lead)}
+                                          >
+                                            Change Status
+                                          </button>
+                                        </Can>
+                                      </Can>
+                                      <Can permission="leads.delete">
+                                        <button
+                                          onClick={() => {
+                                            handleDelete(lead.id);
+                                          }}
+                                          className="text-xs flex w-full rounded-lg px-3 py-2 text-left font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                                        >
+                                          Delete
+                                        </button>
+                                      </Can>
                                     </div>
                                   </div>
                                 </div>
@@ -409,26 +533,88 @@ export default function Leads() {
                 </TableBody>
               </Table>
             </div>
+
+            <Modal
+              isOpen={isOpen}
+              onClose={closeModal}
+              className="max-w-[500px] p-6"
+            >
+              <form onSubmit={handleStatusUpdate}>
+                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+                  Change Status
+                </h4>
+
+                <div className="mb-5">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Status
+                  </label>
+
+                  <select
+                    value={selectedLead.status}
+                    onChange={(e) => setSelectedLead({...selectedLead, status: e.target.value})}
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                  >
+                    {statuses.map((item) => (
+                      <option
+                        key={item}
+                        value={item}
+                        className="dark:bg-gray-900 dark:text-white"
+                      >
+                        {formatStatus(item)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
+                  >
+                    Update Status
+                  </button>
+                </div>
+              </form>
+            </Modal>
           </div>
           {pagination && (
-            <div className="flex items-center gap-3 mt-4">
-              <button
-                disabled={pagination.current_page === 1}
-                onClick={() => setPage((prev) => prev - 1)}
-                className="px-4 py-2 border disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span>
-                Page {pagination.current_page} of {pagination.last_page}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Showing page{' '}
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  {pagination.current_page}
+                </span>{' '}
+                of{' '}
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  {pagination.last_page}
+                </span>
               </span>
-              <button
-                disabled={pagination.current_page === pagination.last_page}
-                onClick={() => setPage((prev) => prev + 1)}
-                className="px-4 py-2 border disabled:opacity-50"
-              >
-                Next
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  id="leads-pagination-prev"
+                  disabled={pagination.current_page === 1}
+                  onClick={() => setPage((prev) => prev - 1)}
+                  className="px-4 py-2 text-sm font-medium border rounded-lg transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+                >
+                  Previous
+                </button>
+                <button
+                  id="leads-pagination-next"
+                  disabled={pagination.current_page === pagination.last_page}
+                  onClick={() => setPage((prev) => prev + 1)}
+                  className="px-4 py-2 text-sm font-medium border rounded-lg transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </ComponentCard>

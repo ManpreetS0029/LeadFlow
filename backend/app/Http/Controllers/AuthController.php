@@ -17,8 +17,7 @@ class AuthController extends Controller
             'password' => ['required', 'min:8', 'max:16']
         ]);
 
-        if(! Auth::attempt($validated))
-        {
+        if (! Auth::attempt($validated)) {
             return response()->json([
                 'message' => 'Invalid email or password'
             ], 401);
@@ -28,15 +27,21 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $permissions = $user->role
+            ? $user->role->permissions->pluck('name')->values()
+            : [];
+
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
             'name' => $user->name,
             'email' => $user->email,
-            'roles' => $user->roles,
+            'role_id' => $user->role_id,
             'avatar_url' => $user->avatar ? url('uploads/avatars/' . $user->avatar) : null,
             'token' => $token,
             'user' => $user,
+            'permissions' => $permissions
         ], 200);
     }
 
@@ -53,7 +58,7 @@ class AuthController extends Controller
             'name' => $request->first_name . ' ' . $request->last_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'roles' => 2
+            'role_id' => 2
         ]);
 
         return response()->json([
@@ -75,7 +80,7 @@ class AuthController extends Controller
     public function profile(Request $request)
     {
         $user = $request->user();
-        
+
         $names = explode(' ', $user->name, 2);
         $firstName = $names[0] ?? '';
         $lastName = $names[1] ?? '';
@@ -89,7 +94,7 @@ class AuthController extends Controller
                 'last_name' => $lastName,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'roles' => $user->roles,
+                'role_id' => $user->role_id,
                 'avatar' => $user->avatar,
                 'avatar_url' => $user->avatar ? url('uploads/avatars/' . $user->avatar) : null,
             ]
@@ -123,12 +128,12 @@ class AuthController extends Controller
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            
+
             $destinationPath = public_path('uploads/avatars');
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
             }
-            
+
             $file->move($destinationPath, $filename);
 
             // Delete old avatar if it exists
@@ -158,7 +163,7 @@ class AuthController extends Controller
                 'last_name' => $lastName,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'roles' => $user->roles,
+                'role_id' => $user->role_id,
                 'avatar' => $user->avatar,
                 'avatar_url' => $user->avatar ? url('uploads/avatars/' . $user->avatar) : null,
             ]

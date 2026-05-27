@@ -7,9 +7,48 @@ use App\Models\LeadNote;
 use App\Models\LeadActivity;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Log;
 
 class LeadController extends Controller
 {
+    public static function middleware(): array
+    {
+        return [
+
+            new Middleware(
+                'permission:leads.view',
+                only: ['index', 'show']
+            ),
+
+            new Middleware(
+                'permission:leads.create',
+                only: ['store']
+            ),
+
+            new Middleware(
+                'permission:leads.edit',
+                only: ['update']
+            ),
+
+            new Middleware(
+                'permission:leads.delete',
+                only: ['destroy']
+            ),
+
+            new Middleware(
+                'permission:leads.assign',
+                only: ['assignLead']
+            ),
+
+            new Middleware(
+                'permission:leads.change_status',
+                only: ['changeStatus']
+            ),
+
+        ];
+    }
+
     public function dashboard(Request $request)
     {
         $userId = $request->user()->id;
@@ -95,8 +134,18 @@ class LeadController extends Controller
 
     public function index(Request $request)
     {
-        $query = Lead::query()
-            ->where('user_id', $request->user()->id);
+        $user = $request->user();
+
+        $query = Lead::query();
+
+        // Sales Executive: only assigned/created leads
+        // Admin = 1, Manager = 2 can see all leads
+        if (!in_array($user->role_id, [1, 3])) {
+            $query->where(function ($q) use ($user) {
+                $q->where('assigned_user_id', $user->id)
+                    ->orWhere('user_id', $user->id);
+            });
+        }
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -164,8 +213,15 @@ class LeadController extends Controller
 
     public function show(Request $request, Lead $lead)
     {
+        $user = $request->user();
+
+        Log::info("User: ", ["User" => $user]);
+
+        if($user->role_id === 2)
+        {
         if ($lead->user_id !== $request->user()->id) {
             abort(403);
+        }
         }
 
         return $lead->load([
@@ -176,8 +232,13 @@ class LeadController extends Controller
 
     public function update(Request $request, Lead $lead)
     {
+        $user = $request->user();
+
+        if($user->role_id === 2)
+        {
         if ($lead->user_id !== $request->user()->id) {
             abort(403);
+        }
         }
 
         $validated = $request->validate([
@@ -215,8 +276,13 @@ class LeadController extends Controller
 
     public function destroy(Request $request, Lead $lead)
     {
+        $user = $request->user();
+
+        if($user->role_id === 2)
+        {
         if ($lead->user_id !== $request->user()->id) {
             abort(403);
+        }
         }
 
         $lead->delete();
@@ -236,8 +302,13 @@ class LeadController extends Controller
 
     public function updateStatus(Request $request, Lead $lead)
     {
+        $user = $request->user();
+
+        if($user->role_id === 2)
+        {
         if ($lead->user_id !== $request->user()->id) {
             abort(403);
+        }
         }
 
         $validated = $request->validate([
@@ -268,28 +339,28 @@ class LeadController extends Controller
     }
 
     public function assignLead(Request $request, Lead $lead)
-{
-    $validated = $request->validate([
-        'assigned_user_id' => ['required', 'integer', 'exists:users,id'],
-    ]);
+    {
+        $validated = $request->validate([
+            'assigned_user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
 
-    $salesUser = User::where('id', $validated['assigned_user_id'])
-        ->where('roles', 2)
-        ->first();
+        $salesUser = User::where('id', $validated['assigned_user_id'])
+            ->where('roles', 2)
+            ->first();
 
-    if (!$salesUser) {
+        if (!$salesUser) {
+            return response()->json([
+                'message' => 'Selected user must be a Sales Executive.'
+            ], 422);
+        }
+
+        $lead->update([
+            'assigned_user_id' => $validated['assigned_user_id'],
+        ]);
+
         return response()->json([
-            'message' => 'Selected user must be a Sales Executive.'
-        ], 422);
+            'message' => 'Lead assigned successfully.',
+            'data' => $lead->load('assignedUser'),
+        ]);
     }
-
-    $lead->update([
-        'assigned_user_id' => $validated['assigned_user_id'],
-    ]);
-
-    return response()->json([
-        'message' => 'Lead assigned successfully.',
-        'data' => $lead->load('assignedUser'),
-    ]);
-}
 }
